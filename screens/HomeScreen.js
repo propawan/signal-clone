@@ -5,6 +5,7 @@ import { ScrollView } from 'react-native-gesture-handler'
 import CustomListItem from '../components/CustomListItem'
 import { auth, db } from '../firebase'
 import { AntDesign, SimpleLineIcons } from '@expo/vector-icons'
+import { Image } from 'react-native'
 
 const HomeScreen = ({ navigation }) => {
     const [chats, setChats] = useState([]);

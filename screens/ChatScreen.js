@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from 'react'
+import React, { useLayoutEffect, useState, useRef, useEffect } from 'react'
 import { Platform, Keyboard, KeyboardAvoidingView, SafeAreaView, StyleSheet, Text, TouchableOpacity, View, TouchableWithoutFeedback } from 'react-native'
 import { Avatar } from 'react-native-elements/dist/avatar/Avatar'
 import { AntDesign, SimpleLineIcons } from '@expo/vector-icons'
@@ -8,10 +8,85 @@ import { StatusBar } from 'expo-status-bar';
 import { ScrollView, TextInput } from 'react-native';
 import { db, auth } from '../firebase';
 import * as firebase from 'firebase';
+import * as ImagePicker from "expo-image-picker";
+import { Image } from 'react-native';
 
 const ChatScreen = ({ navigation, route }) => {
     const [input, setInput] = useState('')
     const [messages, setMessages] = useState([])
+    // const [selectedImage, setSelectedImage] = useState(null)
+    let currImage = null;
+
+    useEffect(() => {
+        requestPermission();
+    }, [])
+
+    const requestPermission = async () => {
+        const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+        if (!granted) {
+            alert('You need to give Permission.')
+        }
+    }
+
+    const selectImage = async () => {
+        // let fireUrl = null;
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 0.5
+            });
+            if (!result.cancelled) {
+                let uri = result.uri;
+                let uploadUri = Platform.OS === 'ios' ? uri.replace('file://', '') : uri;
+                try {
+                    await uploadImage(uploadUri)
+                    let imageRef = firebase.storage().ref(`media/image${messages.length}`);
+                    imageRef
+                        .getDownloadURL()
+                        .then((url) => {
+                            console.log("Url " + url);
+                            // fireUrl = url;
+                            // console.log('Initial seleceted Image: ' + typeof currImage)
+                            // setSelectedImage({ imgUri: url })
+                            currImage = { imgUri: url }
+                            // console.log('Then seleceted Image: ' + typeof currImage)
+                            // console.log('Selected Image Url ' + currImage.imgUri);
+                            sendMessage();
+                        })
+                        .catch((e) => console.log('getting downloadURL of image error => ', e));
+                } catch (error) {
+                    console.log('Error is this: ', error)
+                }
+            }
+        } catch (error) {
+            console.log('Error reading an Image ', error)
+        }
+        // setSelectedImage({ imgUri: fireUrl })
+        // console.log('In end seleceted Image: ' + selectedImage)
+    }
+
+    const doesImageExist = (uri) => {
+        // Not completely implemented
+        let imageRef = firebase.storage().ref('/' + uri);
+        imageRef
+            .getDownloadURL()
+            .then((url) => {
+                console.log("image exist", url)
+                return true;
+            })
+            .catch((e) => {
+                console.log("Error getting image");
+                console.log('getting downloadURL of image error => ', e);
+                return false;
+            });
+    }
+
+    const uploadImage = async (uri) => {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        let ref = firebase.storage().ref('media/').child(`image${messages.length}`);
+        return ref.put(blob).then((snapshot) => { console.log("updated") });
+    }
 
     useLayoutEffect(() => {
         navigation.setOptions({
@@ -26,7 +101,7 @@ const ChatScreen = ({ navigation, route }) => {
                     }}
                 >
                     <Avatar rounded source={{
-                        uri: messages[0]?.data.photoURL || 'https://cencup.com/wp-content/uploads/2019/07/avatar-placeholder.png'
+                        uri: messages[messages.length - 1]?.data.photoURL || 'https://cencup.com/wp-content/uploads/2019/07/avatar-placeholder.png'
                     }} />
                     <Text
                         style={{
@@ -65,21 +140,27 @@ const ChatScreen = ({ navigation, route }) => {
         })
     }, [navigation, messages])
 
-    const sendMessage = () => {
+    const sendMessage = async () => {
         Keyboard.dismiss();
-        db.collection('chats').doc(route.params.id).collection('messages').add({
+        await db.collection('chats').doc(route.params.id).collection('messages').add({
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
             message: input,
             displayName: auth.currentUser.displayName,
             email: auth.currentUser.email,
-            photoURL: auth.currentUser.photoURL
-        })
+            photoURL: auth.currentUser.photoURL,
+            uri: currImage
+        }).then(() => {
+            setInput('')
+            currImage = null;
+        }).catch((error) => {
+            console.log("ERRRRRRRRORRRRRRRR")
+            console.error("Error writing document: ", error);
+        });
 
-        setInput('')
     }
 
     useLayoutEffect(() => {
-        const unsubscribe = db.collection('chats').doc(route.params.id).collection('messages').orderBy('timestamp', 'desc').onSnapshot(snapshot => {
+        const unsubscribe = db.collection('chats').doc(route.params.id).collection('messages').orderBy('timestamp').onSnapshot(snapshot => {
             setMessages(
                 snapshot.docs.map(doc => ({
                     id: doc.id,
@@ -91,6 +172,8 @@ const ChatScreen = ({ navigation, route }) => {
         return unsubscribe;
     }, [route])
 
+    const scrollView = useRef()
+
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
             <StatusBar style='light' />
@@ -99,46 +182,51 @@ const ChatScreen = ({ navigation, route }) => {
                 style={styles.container}
                 keyboardVerticalOffset={90}
             >
+
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                     <>
-                        <ScrollView contentContainerStyle={{ paddingTop: 15 }}>
+                        <ScrollView ref={scrollView} contentContainerStyle={{ paddingTop: 15 }} onContentSizeChange={() => scrollView.current.scrollToEnd()}>
                             {messages.map(({ id, data }) =>
-                                data.email === auth.currentUser.email ? (
-                                    <View key={id} style={styles.reciever}>
-                                        <Avatar
-                                            containerStyle={{
-                                                position: 'absolute',
-                                                bottom: - 15,
-                                                right: -5
-                                            }}
-                                            position='absolute'
-                                            bottom={- 15}
-                                            right={-5}
-                                            rounded
-                                            size={30}
-                                            source={{ uri: data.photoURL }}
-                                        />
-                                        <Text style={styles.recieverText}>{data.message}</Text>
-                                    </View>
-                                ) : (
-                                    <View key={id} style={styles.sender}>
-                                        <Avatar
-                                            containerStyle={{
-                                                position: 'absolute',
-                                                bottom: - 15,
-                                                right: -5
-                                            }}
-                                            position='absolute'
-                                            bottom={- 15}
-                                            right={-5}
-                                            rounded
-                                            size={30}
-                                            source={{ uri: data.photoURL }}
-                                        />
-                                        <Text style={styles.senderText}>{data.message}</Text>
-                                        <Text style={styles.senderName}>{data.displayName}</Text>
-                                    </View>
-                                )
+                                data.email === auth.currentUser.email
+                                    ? (
+                                        <View key={id} style={styles.reciever}>
+                                            <Avatar
+                                                containerStyle={{
+                                                    position: 'absolute',
+                                                    bottom: - 15,
+                                                    right: -5
+                                                }}
+                                                position='absolute'
+                                                bottom={- 15}
+                                                right={-5}
+                                                rounded
+                                                size={30}
+                                                source={{ uri: data.photoURL }}
+                                            />
+                                            <Text style={styles.recieverText}>{data.message}</Text>
+                                            {data.uri && <Image
+                                                source={{ uri: data.uri.imgUri }}
+                                                style={{ height: 100, width: 100, backgroundColor: 'yellow' }} />}
+                                        </View>
+                                    ) : (
+                                        <View key={id} style={styles.sender}>
+                                            <Avatar
+                                                containerStyle={{
+                                                    position: 'absolute',
+                                                    bottom: - 15,
+                                                    right: -5
+                                                }}
+                                                position='absolute'
+                                                bottom={- 15}
+                                                right={-5}
+                                                rounded
+                                                size={30}
+                                                source={{ uri: data.photoURL }}
+                                            />
+                                            <Text style={styles.senderText}>{data.message}</Text>
+                                            <Text style={styles.senderName}>{data.displayName}</Text>
+                                        </View>
+                                    )
                             )}
                         </ScrollView>
                         <View style={styles.footer}>
@@ -148,6 +236,9 @@ const ChatScreen = ({ navigation, route }) => {
                                 value={input}
                                 onChangeText={(text) => setInput(text)}
                             ></TextInput>
+                            <TouchableOpacity onPress={selectImage} activeOpacity={0.5} style={{ marginRight: 7 }}>
+                                <AntDesign name="picture" size={24} color="#2B68E6" />
+                            </TouchableOpacity>
                             <TouchableOpacity onPress={sendMessage} activeOpacity={0.5}>
                                 <Ionicons name='send' size={24} color='#2B68E6' />
                             </TouchableOpacity>
