@@ -10,12 +10,18 @@ import { db, auth } from '../firebase';
 import * as firebase from 'firebase';
 import * as ImagePicker from "expo-image-picker";
 import { Image } from 'react-native';
+<<<<<<< HEAD
 import MessageReactions from '../components/MessageReactions';
+=======
+>>>>>>> b5f6c9215b50d86f37ef2e9d247002cc50e84281
 
 const ChatScreen = ({ navigation, route }) => {
     const [input, setInput] = useState('')
     const [messages, setMessages] = useState([])
+<<<<<<< HEAD
     const [currSelected, setCurrSelected] = useState(null)
+=======
+>>>>>>> b5f6c9215b50d86f37ef2e9d247002cc50e84281
     // const [selectedImage, setSelectedImage] = useState(null)
     let currImage = null;
 
@@ -23,6 +29,7 @@ const ChatScreen = ({ navigation, route }) => {
         requestPermission();
     }, [])
 
+<<<<<<< HEAD
     const handleSelection = (id) => {
         setCurrSelected(id)
     }
@@ -39,6 +46,8 @@ const ChatScreen = ({ navigation, route }) => {
         console.log("Reaction sent")
     }
 
+=======
+>>>>>>> b5f6c9215b50d86f37ef2e9d247002cc50e84281
     const requestPermission = async () => {
         const { granted } = await ImagePicker.requestCameraPermissionsAsync();
         if (!granted) {
@@ -221,6 +230,7 @@ const ChatScreen = ({ navigation, route }) => {
                                                 size={30}
                                                 source={{ uri: data.photoURL }}
                                             />
+<<<<<<< HEAD
                                             <TouchableOpacity onLongPress={() => handleSelection(id)} onPress={() => handleSelection(null)}>
                                                 {data.message !== '' && <Text style={styles.recieverText}>{data.message}</Text>}
                                                 {data.uri && <Image
@@ -228,6 +238,12 @@ const ChatScreen = ({ navigation, route }) => {
                                                     style={{ height: 100, width: 100, backgroundColor: 'grey' }} />}
                                                 {currSelected == id && <MessageReactions sendReaction={sendReaction} id={id} />}
                                             </TouchableOpacity>
+=======
+                                            <Text style={styles.recieverText}>{data.message}</Text>
+                                            {data.uri && <Image
+                                                source={{ uri: data.uri.imgUri }}
+                                                style={{ height: 100, width: 100, backgroundColor: 'yellow' }} />}
+>>>>>>> b5f6c9215b50d86f37ef2e9d247002cc50e84281
                                         </View>
                                     ) : (
                                         <View key={id} style={styles.sender}>
@@ -244,6 +260,7 @@ const ChatScreen = ({ navigation, route }) => {
                                                 size={30}
                                                 source={{ uri: data.photoURL }}
                                             />
+<<<<<<< HEAD
                                             <TouchableOpacity onLongPress={() => handleSelection(id)} onPress={() => handleSelection(null)}>
                                                 <Text style={styles.senderText}>{data.message}</Text>
                                                 <Text style={styles.senderName}>{data.displayName}</Text>
@@ -252,6 +269,10 @@ const ChatScreen = ({ navigation, route }) => {
                                                     style={{ height: 100, width: 100, backgroundColor: 'grey' }} />}
                                                 {currSelected == id && <MessageReactions sendReaction={sendReaction} id={id} />}
                                             </TouchableOpacity>
+=======
+                                            <Text style={styles.senderText}>{data.message}</Text>
+                                            <Text style={styles.senderName}>{data.displayName}</Text>
+>>>>>>> b5f6c9215b50d86f37ef2e9d247002cc50e84281
                                         </View>
                                     )
                             )}

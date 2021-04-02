@@ -9,7 +9,10 @@ import RegisterScreen from './screens/RegisterScreen';
 import HomeScreen from './screens/HomeScreen';
 import AddChatScreen from './screens/AddChatScreen';
 import ChatScreen from './screens/ChatScreen';
+<<<<<<< HEAD
 import MessageReactions from './components/MessageReactions';
+=======
+>>>>>>> b5f6c9215b50d86f37ef2e9d247002cc50e84281
 
 const { Navigator, Screen } = createStackNavigator();
 const globalScreenOptions = {

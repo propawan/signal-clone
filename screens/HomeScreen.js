@@ -6,7 +6,10 @@ import CustomListItem from '../components/CustomListItem'
 import { auth, db } from '../firebase'
 import { AntDesign, SimpleLineIcons } from '@expo/vector-icons'
 import { Image } from 'react-native'
+<<<<<<< HEAD
 import MessageReactions from '../components/MessageReactions'
+=======
+>>>>>>> b5f6c9215b50d86f37ef2e9d247002cc50e84281
 
 const HomeScreen = ({ navigation }) => {
     const [chats, setChats] = useState([]);
